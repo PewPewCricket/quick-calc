@@ -14,135 +14,130 @@
 #include <stack>
 #include <stdfloat>
 
-// Your apply_operator function (no change needed here)
-float apply_operator(const float a, const float b, const char op) {
-    if (op == '+') return a + b;
-    if (op == '-') return a - b;
-    if (op == '*') return a * b; // 'x' should be converted to '*' before this
-    if (op == '/') return a / b;
-    return 0; // Handle error or unsupported operator
-}
+#include "mathSolver.h"
 
-float CalculatorWidget::solve(const std::string& equation) {
-    std::stack<float> operands;
-    std::stringstream ss(equation);
-    std::string token;
-
-    float num1 = 0.0f;
-    float num2 = 0.0f;
-    char op = ' ';
-    bool num1_found = false;
-    bool op_found = false;
-
-    while (ss >> token) {
-        if (isdigit(token[0]) || (token.length() > 1 && token[0] == '-' && isdigit(token[1]))) {
-            if (!num1_found) {
-                num1 = std::stof(token);
-                num1_found = true;
-            } else if (op_found) {
-                num2 = std::stof(token);
-                return apply_operator(num1, num2, op);
-            }
-        } else // It's an operator
-            if (token.length() == 1) {
-                op = token[0];
-                if (op == 'x') op = '*';
-                op_found = true;
-            } else
-                return 0.0f;
-    }
-
-    return num1;
-}
-
-static std::array<std::string, 16> buttonTypes = {
-    "1", "2", "3", "+",
-    "4", "5", "6", "-",
-    "7", "8", "9", "x",
-    "CE", "0", "=", "/"
+static std::array<std::string, 20> buttonTypes =
+{
+    "1", "2", "3", "+", "(",
+    "4", "5", "6", "-", ")",
+    "7", "8", "9", "*", "^",
+    "CE", "0", "=", "/", "u-"
 };
 
-void CalculatorWidget::appendDisplay(const QString& appendText) const {
-    QString currentText = this->display->text();
-    QString processedAppendText = appendText;
+static std::string trimZeros(std::string s) {
+    auto pos = s.find('.');
+    if (pos != std::string::npos) {
+        while (!s.empty() && s.back() == '0')
+            s.pop_back();
 
-    if (appendText == "+" || appendText == "-" || appendText == "x" || appendText == "/") {
-        processedAppendText = " " + appendText + " ";
+        if (!s.empty() && s.back() == '.')
+            s.pop_back();
+    }
+    return s;
+}
+
+void CalculatorWidget::appendDisplay(const QString& text) const
+{
+    QString cur = display->text();
+    static const QSet<QString> ops = { "+", "-", "*", "/", "^", "(", ")" };
+
+    if (text == "u-") {
+        if (!cur.isEmpty() && !cur.endsWith(' '))
+            cur += ' ';
+        cur += "u-";
+    }
+    else if (cur.endsWith("u-") && text.size() == 1 && text[0].isDigit()) {
+        cur += text;
+    }
+    else if (text.size() == 1 && text[0].isDigit() && !cur.isEmpty() && cur.back().isDigit()) {
+        cur += text;
+    }
+    else {
+        QString in = ops.contains(text) ? QString(" %1 ").arg(text) : text;
+        QString trimmed = cur.trimmed();
+        if (!trimmed.isEmpty() && !trimmed.endsWith(' '))
+            trimmed += ' ';
+        trimmed += in.trimmed();
+        cur = trimmed;
     }
 
-    currentText.append(processedAppendText);
-    this->display->setText(currentText);
+    display->setText(cur);
 }
 
-void CalculatorWidget::numCallback() const {
+// =========================
+// Button Callbacks
+// =========================
+
+void CalculatorWidget::eqCallback() const
+{
+    const std::vector<std::string> problem = toPostfix(display->text().toStdString());
+    std::string solution = std::to_string(solvePostfix(problem));
+    if (solution[0] == '-') {
+        solution.erase(0,1);
+        solution = "u-" + solution;
+    }
+
+    solution = trimZeros(solution);
+    display->setText(QString::fromStdString(solution));
+}
+
+void CalculatorWidget::numCallback() const
+{
     const QString buttonText = qobject_cast<QPushButton*>(sender())->text();
-    this->appendDisplay(buttonText);
+    appendDisplay(buttonText);
 }
 
-void CalculatorWidget::opCallback() const {
+void CalculatorWidget::opCallback() const
+{
     const QString buttonText = qobject_cast<QPushButton*>(sender())->text();
-    this->appendDisplay(buttonText);
+    appendDisplay(buttonText);
 }
 
-void CalculatorWidget::eqCallback() const {
-    const QString equation = this->display->text();
-    std::string equationStd = equation.toStdString();
-
-    const size_t first = equationStd.find_first_not_of(' ');
-    if (const size_t last = equationStd.find_last_not_of(' '); std::string::npos == first || std::string::npos == last)
-        equationStd = "";
-    else
-        equationStd = equationStd.substr(first, (last - first + 1));
-    const float result = CalculatorWidget::solve(equationStd);
-    const auto d_result = static_cast<double>(result);
-    QString formattedResult = QString::number(d_result, 'f', 6);
-
-    while (formattedResult.contains('.') && formattedResult.endsWith('0'))
-        formattedResult.chop(1);
-    if (formattedResult.endsWith('.'))
-        formattedResult.chop(1);
-
-    this->display->setText(formattedResult);
+void CalculatorWidget::ceCallback() const
+{
+    display->setText("");
 }
 
-void CalculatorWidget::ceCallback() const {
-    this->display->setText("");
-}
+// =========================
+// Constructors & Destructors
+// =========================
 
 CalculatorWidget::CalculatorWidget(QWidget *parent = nullptr) : QWidget(parent)
 {
-    this->layout = new QGridLayout(this);
-    this->layout->setSizeConstraint(QLayout::SetMinimumSize);
-    for (int i = 0; i < 16; i++) {
-        this->buttons[i] = new QPushButton(QString::fromStdString(buttonTypes[i]), this);
-        this->layout->addWidget(this->buttons[i], i / 4 + 1, i % 4, 1, 1);
-        this->buttons[i]->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Expanding);
+    layout = new QGridLayout(this);
+    layout->setSizeConstraint(QLayout::SetMinimumSize);
+    for (int i = 0; i < 20; i++) {
+        buttons[i] = new QPushButton(QString::fromStdString(buttonTypes[i]), this);
+        layout->addWidget(buttons[i], i / 5 + 1, i % 5, 1, 1);
+        buttons[i]->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Expanding);
         if (buttonTypes[i] == "CE")
-            connect(this->buttons[i], &QPushButton::clicked, this, &CalculatorWidget::ceCallback);
+            connect(buttons[i], &QPushButton::clicked, this, &CalculatorWidget::ceCallback);
         else if (buttonTypes[i] == "=")
-            connect(this->buttons[i], &QPushButton::clicked, this, &CalculatorWidget::eqCallback);
+            connect(buttons[i], &QPushButton::clicked, this, &CalculatorWidget::eqCallback);
         else if (
             buttonTypes[i] == "+" || buttonTypes[i] == "-" ||
-            buttonTypes[i] == "x" || buttonTypes[i] == "/")
-            connect(this->buttons[i], &QPushButton::clicked, this, &CalculatorWidget::opCallback);
+            buttonTypes[i] == "*" || buttonTypes[i] == "/" ||
+            buttonTypes[i] == "^" || buttonTypes[i] == "(" ||
+            buttonTypes[i] == ")")
+            connect(buttons[i], &QPushButton::clicked, this, &CalculatorWidget::opCallback);
         else {
-            connect(this->buttons[i], &QPushButton::clicked, this, &CalculatorWidget::numCallback);
+            connect(buttons[i], &QPushButton::clicked, this, &CalculatorWidget::numCallback);
         }
     }
-    this->display = new QLabel("", this);
-    this->font = new QFont();
-    this->font->setPointSize(24);
-    this->display->setFont(*font);
-    this->display->setWordWrap(true);
-    this->display->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Expanding);
-    this->layout->addWidget(this->display, 0, 0, 1, 4);
+    display = new QLabel("", this);
+    font = new QFont();
+    font->setPointSize(24);
+    display->setFont(*font);
+    display->setWordWrap(true);
+    display->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Expanding);
+    layout->addWidget(display, 0, 0, 1, 5);
 }
 
 CalculatorWidget::~CalculatorWidget()
 {
-    delete this->display;
-    for (int i = 0; i < 16; i++) {
-        delete this->buttons[i];
+    delete display;
+    for (int i = 0; i < 20; i++) {
+        delete buttons[i];
     }
-    delete this->layout;
+    delete layout;
 }

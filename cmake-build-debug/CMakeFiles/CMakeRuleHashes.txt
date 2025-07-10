@@ -1,0 +1,3 @@
+# Hashes of file build rules.
+54df2770c23b24d0ceab96c9775269fb CMakeFiles/quick-calc_autogen
+36845cb5a2d09820ae9b3e2ebb5d48ea quick-calc_autogen/timestamp

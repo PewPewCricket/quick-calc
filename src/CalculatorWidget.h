@@ -22,11 +22,10 @@ public:
 private:
     QLabel *display;
     QFont *font;
-    std::array<QPushButton *, 16> buttons{};
+    std::array<QPushButton *, 20> buttons{};
     QGridLayout *layout;
 
     void appendDisplay(const QString& appendText) const;
-    static float solve(const std::string& equation);
 
 private slots:
     void numCallback() const;

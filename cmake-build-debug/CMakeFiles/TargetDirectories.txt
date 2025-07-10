@@ -1,0 +1,5 @@
+/home/pewpewcricket/CLionProjects/quick-calc/cmake-build-debug/CMakeFiles/quick-calc.dir
+/home/pewpewcricket/CLionProjects/quick-calc/cmake-build-debug/CMakeFiles/edit_cache.dir
+/home/pewpewcricket/CLionProjects/quick-calc/cmake-build-debug/CMakeFiles/rebuild_cache.dir
+/home/pewpewcricket/CLionProjects/quick-calc/cmake-build-debug/CMakeFiles/quick-calc_autogen_timestamp_deps.dir
+/home/pewpewcricket/CLionProjects/quick-calc/cmake-build-debug/CMakeFiles/quick-calc_autogen.dir

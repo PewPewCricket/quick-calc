@@ -15,6 +15,8 @@ set(PROJECT_SOURCES
         src/main.cpp
         src/CalculatorWidget.cpp
         src/CalculatorWidget.h
+        src/mathSolver.h
+        src/mathSolver.cpp
 )
 
 add_executable(${PROJECT_NAME}
