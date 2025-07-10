@@ -21,6 +21,7 @@ public:
 
 private:
     QLabel *display;
+    QFont *font;
     std::array<QPushButton *, 16> buttons{};
     QGridLayout *layout;
 

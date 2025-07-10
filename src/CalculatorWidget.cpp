@@ -43,14 +43,13 @@ float CalculatorWidget::solve(const std::string& equation) {
                 num2 = std::stof(token);
                 return apply_operator(num1, num2, op);
             }
-        } else { // It's an operator
+        } else // It's an operator
             if (token.length() == 1) {
                 op = token[0];
                 if (op == 'x') op = '*';
                 op_found = true;
             } else
                 return 0.0f;
-        }
     }
 
     return num1;
@@ -95,7 +94,7 @@ void CalculatorWidget::eqCallback() const {
     else
         equationStd = equationStd.substr(first, (last - first + 1));
     const float result = CalculatorWidget::solve(equationStd);
-    auto d_result = static_cast<double>(result);
+    const auto d_result = static_cast<double>(result);
     QString formattedResult = QString::number(d_result, 'f', 6);
 
     while (formattedResult.contains('.') && formattedResult.endsWith('0'))
@@ -113,9 +112,11 @@ void CalculatorWidget::ceCallback() const {
 CalculatorWidget::CalculatorWidget(QWidget *parent = nullptr) : QWidget(parent)
 {
     this->layout = new QGridLayout(this);
+    this->layout->setSizeConstraint(QLayout::SetMinimumSize);
     for (int i = 0; i < 16; i++) {
         this->buttons[i] = new QPushButton(QString::fromStdString(buttonTypes[i]), this);
         this->layout->addWidget(this->buttons[i], i / 4 + 1, i % 4, 1, 1);
+        this->buttons[i]->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Expanding);
         if (buttonTypes[i] == "CE")
             connect(this->buttons[i], &QPushButton::clicked, this, &CalculatorWidget::ceCallback);
         else if (buttonTypes[i] == "=")
@@ -129,6 +130,11 @@ CalculatorWidget::CalculatorWidget(QWidget *parent = nullptr) : QWidget(parent)
         }
     }
     this->display = new QLabel("", this);
+    this->font = new QFont();
+    this->font->setPointSize(24);
+    this->display->setFont(*font);
+    this->display->setWordWrap(true);
+    this->display->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Expanding);
     this->layout->addWidget(this->display, 0, 0, 1, 4);
 }
 
